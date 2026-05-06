@@ -1,4 +1,3 @@
-
 # Hardware Tick-to-Book: NASDAQ ITCH 5.0 Engine
 
 ![Language](https://img.shields.io/badge/Language-SystemVerilog-blue)
@@ -6,30 +5,37 @@
 ![Status](https://img.shields.io/badge/Status-Planned%20(Pre--Development)-lightgrey)
 
 ## Overview
-This repository will house a cycle-accurate, hardware-accelerated Level 2 Order Book engine designed to process the NASDAQ ITCH 5.0 protocol. Bypassing traditional software network stacks, the goal of this RTL pipeline is to ingest raw PCAP network data, decode financial messages, and maintain a sorted Bid/Ask spread entirely in hardware. 
+This repository documents a 5-week project to build a cycle-accurate, hardware-accelerated trading engine. 
 
-This project is structured as a 5-week development sprint to demonstrate ultra-low latency design principles, complex state management in FPGAs, and robust software-driven hardware verification.
+In modern High-Frequency Trading (HFT), processing market data via standard software operating systems is too slow. This project solves that bottleneck by moving the entire data ingestion pipeline directly into custom RTL (FPGA hardware). The system ingests raw NASDAQ network data (PCAP files), decodes the ITCH 5.0 financial protocol, and maintains a sorted Bid/Ask spread (Level 2 Order Book) entirely in hardware to achieve ultra-low latency.
 
 ## Project Roadmap (5-Week Sprint)
-- [ ] **Week 1: Architecture & Network Ingress**
-  - Define datapath and BRAM memory map.
-  - Implement raw UDP/IP payload extraction and asynchronous clock domain crossing FIFOs.
+- [ ] **Week 1: Network Ingress & Data Extraction**
+  - *Goal:* Safely pull market data from the fast outside network into the processing core.
+  - *Plan:* Implement raw UDP/IP payload extraction and manage asynchronous clock domain crossings using custom Gray-code FIFOs. Define the primary datapath and BRAM memory map.
 - [ ] **Week 2: Protocol Decoder**
-  - Build zero-stall state machines to parse ITCH 5.0 messages (Add, Execute, Cancel).
+  - *Goal:* Translate NASDAQ's raw network code into actionable trading commands without slowing down.
+  - *Plan:* Build zero-stall state machines to parse incoming ITCH 5.0 messages (Add, Execute, Cancel, Delete) on the fly.
 - [ ] **Week 3: Hardware Order Book**
-  - Implement custom memory architecture to track outstanding orders and maintain the top-of-book (BBO).
+  - *Goal:* Store and sort thousands of active orders instantly without relying on a traditional software database.
+  - *Plan:* Implement a custom hardware memory architecture to track outstanding order IDs and dynamically maintain the top-of-book (BBO) spread.
 - [ ] **Week 4: Software Reference Model**
-  - Develop a software-based Python order book to process historical PCAP files for baseline comparison.
-- [ ] **Week 5: Co-Simulation & SVA Integration**
-  - Integrate `cocotb` to drive PCAP data directly into RTL. 
-  - Embed SystemVerilog Assertions (SVA) and verify zero data loss.
+  - *The Goal:* Create a "gold standard" software baseline to serve as an answer key.
+  - *The Tech:* Develop a Python-based order book to process historical PCAP files for baseline verification and data integrity checking.
+- [ ] **Week 5: Co-Simulation & Automated Verification**
+  - *Goal:* Guarantee the hardware engine operates flawlessly under massive network stress.
+  - *Plan:* Integrate `cocotb` to drive raw PCAP data directly into the SystemVerilog RTL. Embed SystemVerilog Assertions (SVA) to verify zero data loss and strict protocol compliance.
 
 ## Planned Architecture 
-The datapath will be fully pipelined and segmented into three primary modules:
-*   **Network Ingress & Framing:** Extracts raw ITCH payloads, managing clock crossings via custom Gray-code FIFOs.
-*   **Protocol Decoder:** Parses ITCH 5.0 messages and extracts required fields (Stock Locate, Reference Number, Price, Shares).
-*   **Hardware Order Book:** A custom BRAM-based memory architecture to track orders and handle modifications instantly.
+The datapath will be fully pipelined to minimize stalling and is segmented into three core modules:
+*   **Network Ingress & Framing (The Receiver):** Extracts raw ITCH payloads from standard internet packets. It manages safe data handoffs between the network clock and the core processing clock via custom Asynchronous FIFOs.
+*   **Protocol Decoder (The Translator):** A high-speed processing unit that parses ITCH 5.0 messages and extracts required fields (Stock Locate, Reference Number, Price, Shares) without skipping a clock cycle.
+*   **Hardware Order Book (The Database):** A custom BRAM-based memory architecture designed to emulate a Content Addressable Memory (CAM), tracking active orders and handling modifications instantly.
 
 ## Planned Verification Methodology
-Physical deployment will be simulated using a rigorous, data-driven testbench environment utilizing Python, `cocotb`, and real-world NASDAQ PCAP files for cycle-by-cycle comparisons against a Python reference model.
+To ensure zero-defect operation, physical deployment will be simulated using a rigorous, data-driven testbench environment. Python, `cocotb`, and real-world NASDAQ PCAP files will be used to run cycle-by-cycle comparisons against the software reference model, proving the RTL matches the expected output perfectly.
+
+## Directory Structure
+*   `src/rtl/`: Core SystemVerilog modules (Ingress, Decoder, Memory Management).
+*   `sim/`: `cocotb` testbenches, Python reference models, and PCAP parsing scripts.
 *   `docs/`: Timing diagrams and memory map architecture notes.
