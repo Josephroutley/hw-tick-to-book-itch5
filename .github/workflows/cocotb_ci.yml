@@ -1,1 +1,20 @@
+name: cocotb Verification
 
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: CI/CD Pipeline Status
+        run: |
+          echo "Repository structure initialized successfully."
+          echo "Test phase pending: Waiting for SystemVerilog RTL development before executing cocotb."
